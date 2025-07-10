@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 
-from app.database import Base, engine
-from app.routes import note, register, login
+from src.database import Base, engine
+from src.routes import note, register, login, user, logout
 
 
 Base.metadata.create_all(bind=engine)
@@ -15,3 +15,5 @@ app = FastAPI(
 app.include_router(note.route)
 app.include_router(register.route)
 app.include_router(login.route)
+app.include_router(user.route)
+app.include_router(logout.route)
