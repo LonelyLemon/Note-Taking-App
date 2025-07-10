@@ -1,7 +1,7 @@
 from pydantic import BaseModel, EmailStr
 from datetime import datetime
 
-
+#User Schemas
 class UserCreate(BaseModel):
     username: str
     email: EmailStr
@@ -14,6 +14,8 @@ class UserResponse(BaseModel):
     class Config:
         from_attributes = True
 
+
+#Note Schemas
 class UpdateNote(BaseModel):
     note_title: str
     note_content: str
@@ -23,21 +25,8 @@ class TakeNote(BaseModel):
     note_title: str
     note_content: str
 
-class UserLogin(BaseModel):
-    username: str
-    password: str
 
+#Token Schemas
 class Token(BaseModel):
     access_token: str
     token_type: str
-
-
-# class CheckNote(BaseModel):
-#     owner: str
-#     note_title: str
-#     note_content: str
-#     create_at: datetime
-#     updated_at: datetime
-
-#     class Config:
-#         from_attributes = True

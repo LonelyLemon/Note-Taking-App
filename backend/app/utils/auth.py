@@ -23,7 +23,7 @@ JWT_EXPIRATION_HOURS = os.getenv("JWT_EXPIRATION_HOURS")
 
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-oauth2_scheme = OAuth2PasswordBearer(tokenURL = "auth")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 
 def create_access_token(data: dict):

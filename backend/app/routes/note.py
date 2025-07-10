@@ -2,10 +2,10 @@ from fastapi import APIRouter, Depends, HTTPException
 
 from sqlalchemy.orm import Session
 
-from app.schemas.schemas import TakeNote, UpdateNote
+from app.schemas.schemas import TakeNote, UpdateNote, UserCreate
 from app.models.models import Notes
 from app.database import get_db
-
+from app.utils.auth import get_current_user
 
 route = APIRouter(
     tags=["Note"]
@@ -13,7 +13,7 @@ route = APIRouter(
 
 
 @route.get('/checknote/{id}')
-def check_note(id: str, db: Session = Depends(get_db)):
+def check_note(id: str, db: Session = Depends(get_db), current_user: UserCreate = Depends(get_current_user)):
     checked_note = db.query(Notes).filter(Notes.note_id == id).first()
     if not checked_note:
         raise HTTPException(status_code=404, detail="Note not found")
@@ -21,7 +21,7 @@ def check_note(id: str, db: Session = Depends(get_db)):
 
 
 @route.put('/updatenote/{id}')
-def update_note(id: str, update_request: UpdateNote, db: Session = Depends(get_db)):
+def update_note(id: str, update_request: UpdateNote, db: Session = Depends(get_db), current_user: UserCreate = Depends(get_current_user)):
     note = db.query(Notes).filter(Notes.note_id == id).first()
     if not note:
         pass
@@ -33,14 +33,14 @@ def update_note(id: str, update_request: UpdateNote, db: Session = Depends(get_d
 
 
 @route.delete('/deletenote/{id}')
-def delete_note(id, db: Session = Depends(get_db)):
+def delete_note(id, db: Session = Depends(get_db), current_user: UserCreate = Depends(get_current_user)):
     db.query(Notes).filter(Notes.note_id == id).delete(synchronize_session=False)
     db.commit()
     return "Product Deleted !"
 
 
 @route.post('/takenote')
-def take_note(note: TakeNote, db: Session = Depends(get_db)):
+def take_note(note: TakeNote, db: Session = Depends(get_db), current_user: UserCreate = Depends(get_current_user)):
     new_note = Notes(owner_id=note.owner_id, note_title=note.note_title, note_content=note.note_content)
     db.add(new_note)
     db.commit()
