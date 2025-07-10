@@ -11,6 +11,8 @@ from datetime import datetime, timedelta
 
 
 from app.models.models import Users
+from app.database import get_db
+
 
 load_dotenv()
 
