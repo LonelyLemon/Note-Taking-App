@@ -1,5 +1,6 @@
 from fastapi import APIRouter, HTTPException, Depends
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.future import select
 from jose import jwt, JWTError
 from datetime import datetime
 
@@ -12,7 +13,9 @@ route = APIRouter(
 )
 
 @route.post('/refresh-token')
-def refresh_token(refresh_token: str, db: Session = Depends(get_db)):
+async def refresh_token(refresh_token: str, 
+                        db: AsyncSession = Depends(get_db)
+                        ) -> dict:
     try:
         payload = jwt.decode(refresh_token, JWT_SECRET_KEY, algorithms=[JWT_ALGORITHM])
         if payload.get("type") != "refresh":
@@ -32,7 +35,8 @@ def refresh_token(refresh_token: str, db: Session = Depends(get_db)):
             detail="Invalid Refresh Token"
         )
     
-    refresh_token_entry = db.query(RefreshToken).filter(RefreshToken.token == refresh_token).first()
+    refresh_token_entry_result = await db.execute(select(RefreshToken).where(RefreshToken.token == refresh_token))
+    refresh_token_entry = refresh_token_entry_result.scalars().first()
 
     if not refresh_token_entry or refresh_token_entry.is_expired:
         raise HTTPException(
@@ -42,13 +46,14 @@ def refresh_token(refresh_token: str, db: Session = Depends(get_db)):
     
     if refresh_token_entry.expired_at < datetime.utcnow():
         refresh_token_entry.is_expired = True
-        db.commit()
+        await db.commit()
         raise HTTPException(
             status_code=401,
             detail="Refresh Token Expired"
         )
     
-    user = db.query(Users).filter(Users.user_id == refresh_token_entry.user_id).first()
+    user_result = await db.execute(select(Users).where(Users.user_id == refresh_token_entry.user_id))
+    user = user_result.scalars().first()
     if not user:
         raise HTTPException(
             status_code=404,

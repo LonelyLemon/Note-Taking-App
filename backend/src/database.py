@@ -1,8 +1,8 @@
 import os
 
-from sqlalchemy import engine, create_engine
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
+from sqlalchemy.orm import sessionmaker, declarative_base
+from typing import AsyncGenerator
 
 from dotenv import load_dotenv
 
@@ -14,15 +14,20 @@ POSTGRES_HOST = os.getenv("POSTGRESQL_HOST")
 POSTGRES_PORT = os.getenv("POSTGRESQL_PORT")
 POSTGRES_DB = os.getenv("POSTGRESQL_DB")
 
-SQLALCHEMY_DATABASE_URL = (f"postgresql://{POSTGRES_USER}:{POSTGRES_PASSWORD}@{POSTGRES_HOST}:{POSTGRES_PORT}/{POSTGRES_DB}")
+SQLALCHEMY_DATABASE_URL = (f"postgresql+asyncpg://{POSTGRES_USER}:{POSTGRES_PASSWORD}@{POSTGRES_HOST}:{POSTGRES_PORT}/{POSTGRES_DB}")
 
-engine = create_engine(SQLALCHEMY_DATABASE_URL)
-SessionLocal = sessionmaker(autoflush=False, autocommit=False, bind=engine)
+engine = create_async_engine(SQLALCHEMY_DATABASE_URL, echo=False, future=True)
+
+SessionLocal: AsyncSession = sessionmaker(
+    autoflush=False, 
+    autocommit=False, 
+    expire_on_commit=False, 
+    class_=AsyncSession,
+    bind=engine
+    )
+
 Base = declarative_base()
 
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
+async def get_db() -> AsyncGenerator[AsyncSession, None]:
+    async with SessionLocal() as session:
+        yield session

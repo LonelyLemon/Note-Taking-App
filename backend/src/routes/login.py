@@ -1,8 +1,7 @@
-import uuid
-
 from fastapi import APIRouter,Depends,HTTPException
 from fastapi.security import OAuth2PasswordRequestForm
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.future import select
 from datetime import datetime, timedelta
 
 from src.database import get_db
@@ -16,8 +15,9 @@ route = APIRouter(
 
 
 @route.post('/login')
-def login(login_request: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
-    user = db.query(Users).filter(Users.username == login_request.username).first()
+async def login(login_request: OAuth2PasswordRequestForm = Depends(), db: AsyncSession = Depends(get_db)) -> dict:
+    result = await db.execute(select(Users).where(Users.username == login_request.username))
+    user = result.scalars().first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found!")
     if not verify_password(login_request.password, user.hashed_password):

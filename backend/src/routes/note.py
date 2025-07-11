@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.future import select
 
 from src.schemas.schemas import TakeNote, UpdateNote, UserResponse
 from src.models.models import Notes
@@ -13,8 +14,12 @@ route = APIRouter(
 
 
 @route.get('/checknote/{id}')
-def check_note(id: str, db: Session = Depends(get_db),  current_user: UserResponse = Depends(get_current_user)):
-    checked_note = db.query(Notes).filter(Notes.note_id == id, Notes.owner_id == current_user.user_id).first()
+async def check_note(id: str, 
+                     db: AsyncSession = Depends(get_db),  
+                     current_user: UserResponse = Depends(get_current_user)
+                     ):
+    result = await db.execute(select(Notes).where(Notes.note_id == id, Notes.owner_id == current_user.user_id))
+    checked_note = result.scalars().first()
     if not checked_note:
         raise HTTPException(
             status_code=404, 
@@ -24,28 +29,49 @@ def check_note(id: str, db: Session = Depends(get_db),  current_user: UserRespon
 
 
 @route.put('/updatenote/{id}')
-def update_note(id: str, update_request: UpdateNote, db: Session = Depends(get_db), current_user: UserResponse = Depends(get_current_user)):
-    note = db.query(Notes).filter(Notes.note_id == id, Notes.owner_id == current_user.user_id).first()
+async def update_note(id: str, 
+                      update_request: UpdateNote, 
+                      db: AsyncSession = Depends(get_db), 
+                      current_user: UserResponse = Depends(get_current_user)
+                      ) -> dict:
+    result = await db.execute(select(Notes).where(Notes.note_id == id, Notes.owner_id == current_user.user_id))
+    note = result.scalars().first()
     if not note:
-        pass
+        raise HTTPException(
+            status_code=404,
+            detail="Note not found !"
+        )
     for key, value in update_request.dict().items():
         setattr(note, key, value)
-    db.commit() 
-    db.refresh(note)
-    return "Note Updated Successfully !"
+    await db.commit() 
+    await db.refresh(note)
+    return {"message": "Note Updated Successfully !"}
 
 
 @route.delete('/deletenote/{id}')
-def delete_note(id, db: Session = Depends(get_db), current_user: UserResponse = Depends(get_current_user)):
-    db.query(Notes).filter(Notes.note_id == id, Notes.owner_id == current_user.user_id).delete(synchronize_session=False)
-    db.commit()
-    return "Product Deleted !"
+async def delete_note(id, 
+                      db: AsyncSession = Depends(get_db), 
+                      current_user: UserResponse = Depends(get_current_user)
+                      ) -> dict:
+    result = await db.execute(select(Notes).where(Notes.note_id == id, Notes.owner_id == current_user.user_id))
+    note = result.scalars().first()
+    if not note:
+        raise HTTPException(
+            status_code=404,
+            detail="Note not found !"
+        )
+    await db.delete(note)
+    await db.commit()
+    return {"message": "Product Deleted !"}
 
 
 @route.post('/takenote')
-def take_note(note: TakeNote, db: Session = Depends(get_db), current_user: UserResponse = Depends(get_current_user)):
+async def take_note(note: TakeNote, 
+                    db: AsyncSession = Depends(get_db), 
+                    current_user: UserResponse = Depends(get_current_user)
+                    ):
     new_note = Notes(owner_id=current_user.user_id, note_title=note.note_title, note_content=note.note_content)
     db.add(new_note)
-    db.commit()
-    db.refresh(new_note)
+    await db.commit()
+    await db.refresh(new_note)
     return new_note

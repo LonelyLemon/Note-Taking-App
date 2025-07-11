@@ -10,3 +10,6 @@ passlib
 bcrypt
 python-jose
 python-multipart
+asyncpg
+sqlalchemy[asyncio]
+alembic

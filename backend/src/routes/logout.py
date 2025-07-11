@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.future import select
 
 from src.core.auth import get_current_user, oauth2_scheme
 from src.database import get_db
@@ -12,12 +13,15 @@ route = APIRouter(
 
 
 @route.post("/logout")
-def logout(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db), current_user: str = Depends(get_current_user)):
+async def logout(token: str = Depends(oauth2_scheme), 
+                 db: AsyncSession = Depends(get_db), 
+                 current_user: str = Depends(get_current_user)) -> dict:
     blacklisted = TokenBlacklist(token = token)
     db.add(blacklisted)
     db.commit()
-    refresh_token_entry = db.query(RefreshToken).filter(RefreshToken.token == token).first()
+    result = await db.execute(select(RefreshToken).where(RefreshToken.token == token))
+    refresh_token_entry = result.scalars().first()
     if refresh_token_entry:
         refresh_token_entry.is_expired = True
-        db.commit()
-    return "Logged out successfully!"
+        await db.commit()
+    return {"message": "Logged out successfully!"}

@@ -1,3 +1,5 @@
+from uuid import UUID
+
 from pydantic import BaseModel, EmailStr
 from datetime import datetime
 
@@ -8,7 +10,7 @@ class UserCreate(BaseModel):
     password: str
 
 class UserResponse(BaseModel):
-    user_id: str
+    user_id: UUID
     username: str
     email: EmailStr
 
@@ -22,7 +24,7 @@ class UpdateNote(BaseModel):
     note_content: str
 
 class TakeNote(BaseModel):
-    owner_id: str
+    owner_id: UUID
     note_title: str
     note_content: str
 

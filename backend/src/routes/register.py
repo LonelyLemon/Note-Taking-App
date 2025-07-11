@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select, or_
 
 from src.schemas.schemas import UserCreate, UserResponse
 from src.models.models import Users
@@ -13,8 +14,9 @@ route = APIRouter(
 
 
 @route.post('/register', response_model=UserResponse)
-def register(user: UserCreate, db: Session = Depends(get_db)):
-    existed_user = db.query(Users).filter(Users.username == user.username | Users.email == user.email).first()
+async def register(user: UserCreate, db: AsyncSession = Depends(get_db)):
+    result = await db.execute(select(Users).where(or_(Users.username == user.username, Users.email == user.email)))
+    existed_user = result.scalars().first()
     if existed_user:
         raise HTTPException(
             status_code=400, 
@@ -27,6 +29,6 @@ def register(user: UserCreate, db: Session = Depends(get_db)):
         hashed_password = hashed_pw
         )
     db.add(new_user)
-    db.commit()
-    db.refresh(new_user)
+    await db.commit()
+    await db.refresh(new_user)
     return new_user
