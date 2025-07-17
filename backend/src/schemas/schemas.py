@@ -1,7 +1,6 @@
 from uuid import UUID
 
 from pydantic import BaseModel, EmailStr
-from datetime import datetime
 
 #User Schemas
 class UserCreate(BaseModel):
