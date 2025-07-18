@@ -37,7 +37,7 @@ async def login(login_request: OAuth2PasswordRequestForm = Depends(), db: AsyncS
         expired_at = datetime.utcnow() + timedelta(days=REFRESH_TOKEN_EXPIRATION)
     )
     db.add(new_refresh_token)
-    db.commit()
+    await db.commit()
 
     return {
         "access_token": access_token,

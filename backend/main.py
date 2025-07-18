@@ -1,6 +1,5 @@
-import asyncio
-
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 from src.database import Base, engine
 from src.routes import note, register, login, user, logout
@@ -12,6 +11,14 @@ from src.routes import note, register, login, user, logout
 app = FastAPI(
     title="Note-taking App API",
     description="This is a structure for a Note-taking App"
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 @app.on_event("startup")

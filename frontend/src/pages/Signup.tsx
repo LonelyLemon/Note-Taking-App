@@ -19,8 +19,12 @@ const Signup: React.FC = () => {
             const user = await signup({ username, email, password })
             login('', user);
             navigate('/login');
-        } catch (err) {
-            setError("Sign Up Failed! Username or email already existed")
+        } catch (err : any) {
+            if (err.response && err.response.data && err.response.data.detail) {
+                setError(err.response.data.detail);
+            } else {
+                setError("Sign Up Failed! Please try again.");
+            } 
         }
     }
 
